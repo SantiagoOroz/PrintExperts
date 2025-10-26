@@ -179,7 +179,7 @@ def ejecutar_diagnostico(bc: dict, selected_cat: str, selected_obs: str, answers
                 "causa_probable": hipotesis,
                 "acciones": acciones_finales, # <-- Lista combinada
                 "dominio": dominio,
-                # "recomendada_para_usuario" ya no se pasa
+                
                 "traza": trazas
             }
             break

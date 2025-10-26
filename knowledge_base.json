@@ -679,6 +679,82 @@
         "Si sigue detectando abierta, contactar servicio técnico.",
         "Revisar cierres y bisagras; no forzar la tapa."
       ]
+    },
+    {
+      "dominio": "Conectividad/Software",
+      "sintoma_observable": "Retraso notable en el inicio de la impresión o después de enviar el trabajo",
+      "hipotesis": "La_computadora_es_la_que_esta_tardando_en_mandar_el_archivo.",
+      "premisas": [
+        {
+          "clave": "compu_antigua"
+        },
+        {
+          "clave": "disco_de_almacenamiento_casi_lleno"
+        }
+      ],
+      "preguntas": [
+        {
+          "clave": "compu_antigua",
+          "texto": "¿La computadora es antigua?"
+        },
+        {
+          "clave": "disco_de_almacenamiento_casi_lleno",
+          "texto": "¿El espacio libre de su computadora es menor al 15%?"
+        }
+      ],
+      "acciones": [
+        "Limpiar espacio en su disco de almacenamiento",
+        "Mejorar RAM"
+      ]
+    },
+    {
+      "dominio": "Conectividad/Software",
+      "sintoma_observable": "Mensaje 'Documento no se pudo imprimir'",
+      "hipotesis": "Archivo_corrupto_o_formato_no_soportado",
+      "premisas": [],
+      "preguntas": [
+        {
+          "clave": "prueba_otro_archivo",
+          "texto": "¿Este error ocurre con CUALQUIER documento (incluso un simple Bloc de notas), o solo con este archivo específico (ej. un PDF complejo o una foto)?"
+        },
+        {
+          "clave": "imprimir_como_imagen",
+          "texto": "Si es un PDF, ¿has intentado usar la opción 'Imprimir como imagen' en la configuración avanzada de impresión?"
+        }
+      ],
+      "acciones": [
+        "Si el error es solo con un archivo, intente guardar el documento con otro nombre o en otro formato (ej. exportar a PDF de nuevo).",
+        "Si es un PDF, pruebe la opción 'Imprimir como imagen' en el diálogo de impresión.",
+        "Intente imprimir un documento simple (como un Bloc de notas o un correo) para confirmar que la impresora funciona."
+      ]
+    },
+    {
+      "dominio": "Conectividad/Software",
+      "sintoma_observable": "Mensaje 'Documento no se pudo imprimir'",
+      "hipotesis": "Driver_incorrecto_o_configuracion_de_puerto_erronea",
+      "premisas": [
+        {
+          "clave": "driver_instalado"
+        },
+        {
+          "clave": "reinstalar_driver_intentado"
+        }
+      ],
+      "preguntas": [
+        {
+          "clave": "driver_instalado",
+          "texto": "¿El driver/paquete de impresora está instalado en el equipo?"
+        },
+        {
+          "clave": "reinstalar_driver_intentado",
+          "texto": "¿El mismo archivo imprime correctamente desde otra PC?"
+        }
+      ],
+      "acciones": [
+        "Reinstalar el controlador (driver) de la impresora descargando la última versión desde el sitio web del fabricante.",
+        "Eliminar la impresora del sistema y volver a agregarla, permitiendo que Windows la detecte.",
+        "Verificar que el puerto de la impresora en 'Propiedades' sea el correcto (no uno 'FILE:' o un puerto antiguo)."
+      ]
     }
   ]
 }

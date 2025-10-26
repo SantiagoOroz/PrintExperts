@@ -109,25 +109,21 @@
                     <button type="submit">Obtener Diagnóstico</button>
                 </form>
             </div>
-
+    
     {% elif step == 4 %}
             <div class="step diagnosis-result">
                 <h2>Diagnóstico Final 🩺</h2>
                 <p>Síntoma: <strong>{{ session.selected_obs }}</strong></p>
                 <p>Causa probable: <strong>{{ diagnostico.causa_probable | replace('_', ' ') }}</strong></p>
                 
-                <h3>Acciones Sugeridas:</h3>
+                <h3>Acciones y Sugerencias:</h3>
                 <ul>
                 {% for acc in diagnostico.acciones %}
                     <li>{{ acc }}</li>
                 {% endfor %}
                 </ul>
                 
-                {% if diagnostico.recomendada_para_usuario %}
-                    <h3>Sugerencia para el Usuario:</h3>
-                    <p>{{ diagnostico.recomendada_para_usuario }}</p>
-                {% endif %}
-            </div>
+                </div>
 
             <div class="trazability">
                 <h3>Trazabilidad de la Inferencia:</h3>
@@ -158,7 +154,7 @@
                     <a href="{{ url_for('select_category') }}">Iniciar un nuevo diagnóstico</a>
                 </div>
 
-        {% elif step == 5 %}
+    {% elif step == 5 %}
             <div class="knowledge-form">
                 <h2>Agregar Nuevo Conocimiento</h2>
                 <p style="color: #828181; margin-bottom: 30px;">Complete todos los campos para agregar nuevo conocimiento a la base de datos.</p>
@@ -228,14 +224,14 @@
                     <div class="form-group" id="existing_premise_group" style="display: none;">
                         <label for="existing_premises">Premisas existentes *</label>
                         <div id="existing_premises_container" style="max-height: 200px; overflow-y: auto; border: 1px solid #e9ecef; border-radius: 8px; padding: 10px;">
-                            </div>
+                        </div>
                         <small style="color: #828181; font-size: 14px;">Seleccione las premisas que debe cumplir para este diagnóstico</small>
                     </div>
 
                     <div class="form-group" id="mixed_premise_group" style="display: none;">
                         <label>Premisas existentes:</label>
                         <div id="mixed_existing_premises_container" style="max-height: 200px; overflow-y: auto; border: 1px solid #e9ecef; border-radius: 8px; padding: 10px;">
-                            </div>
+                        </div>
                         <small style="color: #828181; font-size: 14px;">Seleccione las premisas existentes que debe cumplir</small>
                         
                         <label style="margin-top: 20px;">Premisas nuevas:</label>
@@ -259,6 +255,11 @@
                         </button>
                     </div>
 
+                    <div class="form-group">
+                        <label for="probable_cause">Causa probable *</label>
+                        <input type="text" name="probable_cause" id="probable_cause" placeholder="Ingrese la causa probable del problema..." required>
+                    </div>
+                    
                     <div class="form-group">
                         <label for="new_actions">Acciones y Sugerencias *</label>
                         <div id="new_actions_container">
@@ -286,453 +287,419 @@
     </div>
 
 <script>
-        let premiseCounter = 0;
-        let mixedPremiseCounter = 0;
-        let actionCounter = 0;
+    let premiseCounter = 0;
+    let mixedPremiseCounter = 0;
+    let actionCounter = 1; // Empezamos en 1 porque el primero ya está en el HTML
 
-        function toggleSymptomInput() {
-            const symptomType = document.getElementById('symptom_type').value;
-            const newSymptomGroup = document.getElementById('new_symptom_group');
-            const existingSymptomGroup = document.getElementById('existing_symptom_group');
-            
-            if (symptomType === 'new') {
-                newSymptomGroup.style.display = 'block';
-                existingSymptomGroup.style.display = 'none';
-                document.getElementById('existing_symptom').required = false;
-                document.getElementById('new_symptom').required = true;
-            } else if (symptomType === 'existing') {
-                newSymptomGroup.style.display = 'none';
-                existingSymptomGroup.style.display = 'block';
-                document.getElementById('new_symptom').required = false;
-                document.getElementById('existing_symptom').required = true;
-                loadExistingSymptoms();
-            } else {
-                newSymptomGroup.style.display = 'none';
-                existingSymptomGroup.style.display = 'none';
-                document.getElementById('new_symptom').required = false;
-                document.getElementById('existing_symptom').required = false;
-            }
-            validateForm();
+    function toggleSymptomInput() {
+        const symptomType = document.getElementById('symptom_type').value;
+        const newSymptomGroup = document.getElementById('new_symptom_group');
+        const existingSymptomGroup = document.getElementById('existing_symptom_group');
+        
+        if (symptomType === 'new') {
+            newSymptomGroup.style.display = 'block';
+            existingSymptomGroup.style.display = 'none';
+            document.getElementById('existing_symptom').required = false;
+            document.getElementById('new_symptom').required = true;
+        } else if (symptomType === 'existing') {
+            newSymptomGroup.style.display = 'none';
+            existingSymptomGroup.style.display = 'block';
+            document.getElementById('new_symptom').required = false;
+            document.getElementById('existing_symptom').required = true;
+            loadExistingSymptoms();
+        } else {
+            newSymptomGroup.style.display = 'none';
+            existingSymptomGroup.style.display = 'none';
+            document.getElementById('new_symptom').required = false;
+            document.getElementById('existing_symptom').required = false;
         }
+        validateForm();
+    }
 
-        function togglePremiseInput() {
-            const premiseType = document.getElementById('premise_type').value;
-            const newPremiseGroup = document.getElementById('new_premise_group');
-            const existingPremiseGroup = document.getElementById('existing_premise_group');
-            const mixedPremiseGroup = document.getElementById('mixed_premise_group');
+    function togglePremiseInput() {
+        const premiseType = document.getElementById('premise_type').value;
+        const newPremiseGroup = document.getElementById('new_premise_group');
+        const existingPremiseGroup = document.getElementById('existing_premise_group');
+        const mixedPremiseGroup = document.getElementById('mixed_premise_group');
 
-            const newPremiseInputs = newPremiseGroup.querySelectorAll('input[name="new_premise_text[]"], input[name="new_premise_question[]"]');
-            
-            newPremiseInputs.forEach(input => input.required = false);
+        const newPremiseInputs = newPremiseGroup.querySelectorAll('input[name="new_premise_text[]"], input[name="new_premise_question[]"]');
+        
+        newPremiseInputs.forEach(input => input.required = false);
 
-            newPremiseGroup.style.display = 'none';
-            existingPremiseGroup.style.display = 'none';
-            mixedPremiseGroup.style.display = 'none';
-            
-            if (premiseType === 'new') {
-                newPremiseGroup.style.display = 'block';
-                newPremiseInputs.forEach(input => input.required = true);
-            } else if (premiseType === 'existing') {
-                existingPremiseGroup.style.display = 'block';
-                loadExistingPremises();
-            } else if (premiseType === 'mixed') {
-                mixedPremiseGroup.style.display = 'block';
-                loadExistingPremises();
-            }
-            
-            validateForm();
+        newPremiseGroup.style.display = 'none';
+        existingPremiseGroup.style.display = 'none';
+        mixedPremiseGroup.style.display = 'none';
+        
+        if (premiseType === 'new') {
+            newPremiseGroup.style.display = 'block';
+            newPremiseInputs.forEach(input => input.required = true);
+        } else if (premiseType === 'existing') {
+            existingPremiseGroup.style.display = 'block';
+            loadExistingPremises();
+        } else if (premiseType === 'mixed') {
+            mixedPremiseGroup.style.display = 'block';
+            loadExistingPremises();
         }
         
-        function loadExistingSymptoms() {
-            const category = document.getElementById('category').value;
-            const existingSymptomSelect = document.getElementById('existing_symptom');
+        validateForm();
+    }
+    
+    function loadExistingSymptoms() {
+        const category = document.getElementById('category').value;
+        const existingSymptomSelect = document.getElementById('existing_symptom');
+        
+        if (category) {
+            existingSymptomSelect.innerHTML = '<option value="">Cargando síntomas...</option>';
+            existingSymptomSelect.disabled = true;
             
-            if (category) {
-                existingSymptomSelect.innerHTML = '<option value="">Cargando síntomas...</option>';
-                existingSymptomSelect.disabled = true;
-                
-                const encodedCategory = encodeURIComponent(category);
-                fetch(`/api/symptoms?category=${encodedCategory}`)
-                    .then(response => {
-                        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                        return response.json();
-                    })
-                    .then(data => {
-                        console.log('Respuesta del servidor (síntomas):', data);
-                        existingSymptomSelect.innerHTML = '<option value="">-- Seleccione un síntoma --</option>';
-                        existingSymptomSelect.disabled = false;
-                        
-                        if (data.success && data.symptoms && data.symptoms.length > 0) {
-                            data.symptoms.forEach(symptom => {
-                                const option = document.createElement('option');
-                                option.value = symptom;
-                                option.textContent = symptom;
-                                existingSymptomSelect.appendChild(option);
-                            });
-                        } else {
+            const encodedCategory = encodeURIComponent(category);
+            fetch(`/api/symptoms?category=${encodedCategory}`)
+                .then(response => response.json())
+                .then(data => {
+                    existingSymptomSelect.innerHTML = '<option value="">-- Seleccione un síntoma --</option>';
+                    existingSymptomSelect.disabled = false;
+                    
+                    if (data.success && data.symptoms && data.symptoms.length > 0) {
+                        data.symptoms.forEach(symptom => {
                             const option = document.createElement('option');
-                            option.value = '';
-                            option.textContent = 'No hay síntomas disponibles';
+                            option.value = symptom;
+                            option.textContent = symptom;
                             existingSymptomSelect.appendChild(option);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error al cargar síntomas:', error);
-                        existingSymptomSelect.innerHTML = '<option value="">Error al cargar síntomas</option>';
-                        existingSymptomSelect.disabled = false;
-                    });
-            } else {
-                existingSymptomSelect.innerHTML = '<option value="">-- Primero seleccione una categoría --</option>';
-                existingSymptomSelect.disabled = false;
-            }
+                        });
+                    } else {
+                        existingSymptomSelect.appendChild(document.createElement('option')).textContent = 'No hay síntomas disponibles';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al cargar síntomas:', error);
+                    existingSymptomSelect.innerHTML = '<option value="">Error al cargar síntomas</option>';
+                    existingSymptomSelect.disabled = false;
+                });
+        } else {
+            existingSymptomSelect.innerHTML = '<option value="">-- Primero seleccione una categoría --</option>';
+            existingSymptomSelect.disabled = false;
         }
+    }
 
-        function loadExistingPremises() {
-            const category = document.getElementById('category').value;
-            const existingContainer = document.getElementById('existing_premises_container');
-            const mixedContainer = document.getElementById('mixed_existing_premises_container');
-            
-            // Eliminamos la dependencia de 'premiseType' para cargar
-            // y simplemente llenamos ambos contenedores
-            if (category) {
-                const loadingMsg = '<div>Cargando premisas...</div>';
-                existingContainer.innerHTML = loadingMsg;
-                mixedContainer.innerHTML = loadingMsg;
-
-                const encodedCategory = encodeURIComponent(category);
-                fetch(`/api/premises?category=${encodedCategory}`)
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error(`HTTP error! status: ${response.status}`);
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        console.log('Respuesta del servidor (premisas):', data);
-                        
-                        existingContainer.innerHTML = '';
-                        mixedContainer.innerHTML = '';
-                        
-                        if (data.success && data.premises && data.premises.length > 0) {
-                            data.premises.forEach((premise, index) => {
-                                const inputNameExisting = 'existing_premises[]';
-                                const inputNameMixed = 'mixed_existing_premises[]';
-                                
-                                const premiseHTML = `
-                                <div style="margin-bottom: 10px; padding: 8px; border: 1px solid #e9ecef; border-radius: 5px; background: #f8f9fa;">
-                                    <label style="display: flex; align-items: flex-start; cursor: pointer;">
-                                        <input type="checkbox" name="TEMP_NAME" value="${premise.clave}" style="margin-right: 10px; margin-top: 3px;">
-                                        <div>
-                                            <div style="font-weight: 600; color: #18293f;">${premise.texto}</div>
-                                            <div style="font-size: 12px; color: #828181; margin-top: 2px;">
-                                                <strong>Clave:</strong> ${premise.clave} | <strong>Tipo:</strong> ${premise.tipo}
-                                            </div>
-                                        </div>
-                                    </label>
-                                </div>`;
-                                
-                                // Reemplazamos el placeholder con el 'name' correcto para cada contenedor
-                                existingContainer.innerHTML += premiseHTML.replace('TEMP_NAME', inputNameExisting);
-                                mixedContainer.innerHTML += premiseHTML.replace('TEMP_NAME', inputNameMixed);
-                            });
-                        } else {
-                            const noPremiseMsg = '<div style="padding: 20px; text-align: center; color: #828181;">No hay premisas disponibles para esta categoría</div>';
-                            existingContainer.innerHTML = noPremiseMsg;
-                            mixedContainer.innerHTML = noPremiseMsg;
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error al cargar premisas:', error);
-                        const errorMsg = '<div style="padding: 20px; text-align: center; color: #dc3545;">Error al cargar premisas</div>';
-                        existingContainer.innerHTML = errorMsg;
-                        mixedContainer.innerHTML = errorMsg;
-                    });
-            }
-        }
-
-        function addNewPremise() {
-            premiseCounter++;
-            const container = document.getElementById('new_premises_container');
-            const newPremise = document.createElement('div');
-            newPremise.className = 'premise-item';
-            newPremise.style.cssText = 'margin-bottom: 15px; padding: 15px; border: 1px solid #e9ecef; border-radius: 8px;';
-            newPremise.innerHTML = `
-                <div class="form-group">
-                    <label>Premisa (debe ser True para contribuir al diagnóstico):</label>
-                    <input type="text" name="new_premise_text[]" placeholder="Ej: La impresora no responde al encendido" required oninput="generateTechnicalKey(this, 'new_premise_key_${premiseCounter}')">
-                    <div id="new_premise_key_${premiseCounter}" style="margin-top: 5px; font-size: 12px; color: #828181; font-style: italic;">
-                        Clave técnica: (se generará automáticamente)
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Pregunta para el usuario (debe ser Sí/No):</label>
-                    <input type="text" name="new_premise_question[]" placeholder="Ej: ¿La impresora responde al encendido?" required>
-                </div>
-                <button type="button" onclick="removeItem(this)" style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; float: right;">
-                    Eliminar
-                </button>
-            `;
-            container.appendChild(newPremise);
-        }
-
-        function addMixedNewPremise() {
-            mixedPremiseCounter++;
-            const container = document.getElementById('mixed_new_premises_container');
-            const newPremise = document.createElement('div');
-            newPremise.className = 'premise-item';
-            newPremise.style.cssText = 'margin-bottom: 15px; padding: 15px; border: 1px solid #e9ecef; border-radius: 8px;';
-            newPremise.innerHTML = `
-                <div class="form-group">
-                    <label>Premisa (debe ser True para contribuir al diagnóstico):</label>
-                    <input type="text" name="mixed_new_premise_text[]" placeholder="Ej: La impresora no responde al encendido" oninput="generateTechnicalKey(this, 'mixed_premise_key_${mixedPremiseCounter}')">
-                    <div id="mixed_premise_key_${mixedPremiseCounter}" style="margin-top: 5px; font-size: 12px; color: #828181; font-style: italic;">
-                        Clave técnica: (se generará automáticamente)
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Pregunta para el usuario (debe ser Sí/No):</label>
-                    <input type="text" name="mixed_new_premise_question[]" placeholder="Ej: ¿La impresora responde al encendido?">
-                </div>
-                <button type="button" onclick="removeItem(this)" style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; float: right;">
-                    Eliminar
-                </button>
-            `;
-            container.appendChild(newPremise);
-        }
-
-        // Función genérica para eliminar el 'parentElement' del botón
-        function removeItem(button) {
-            button.parentElement.remove();
-        }
+    function loadExistingPremises() {
+        const category = document.getElementById('category').value;
+        const existingContainer = document.getElementById('existing_premises_container');
+        const mixedContainer = document.getElementById('mixed_existing_premises_container');
         
-        // Función para agregar un campo de acción
-        function addNewAction() {
-            actionCounter++;
-            const container = document.getElementById('new_actions_container');
-            const newItem = document.createElement('div');
-            newItem.className = 'action-item';
-            newItem.style.cssText = 'display: flex; margin-bottom: 10px;';
-            newItem.innerHTML = `
-                <input type="text" name="new_actions[]" placeholder="Descripción de la acción ${actionCounter}" style="flex-grow: 1; margin-right: 10px;">
-                <button type="button" onclick="removeItem(this)" style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">
-                    Eliminar
-                </button>
-            `;
-            container.appendChild(newItem);
+        if (category) {
+            const loadingMsg = '<div>Cargando premisas...</div>';
+            existingContainer.innerHTML = loadingMsg;
+            mixedContainer.innerHTML = loadingMsg;
+
+            const encodedCategory = encodeURIComponent(category);
+            fetch(`/api/premises?category=${encodedCategory}`)
+                .then(response => response.json())
+                .then(data => {
+                    existingContainer.innerHTML = '';
+                    mixedContainer.innerHTML = '';
+                    
+                    if (data.success && data.premises && data.premises.length > 0) {
+                        data.premises.forEach((premise, index) => {
+                            const premiseHTML = `
+                            <div style="margin-bottom: 10px; padding: 8px; border: 1px solid #e9ecef; border-radius: 5px; background: #f8f9fa;">
+                                <label style="display: flex; align-items: flex-start; cursor: pointer;">
+                                    <input type="checkbox" name="TEMP_NAME" value="${premise.clave}" style="margin-right: 10px; margin-top: 3px;">
+                                    <div>
+                                        <div style="font-weight: 600; color: #18293f;">${premise.texto}</div>
+                                        <div style="font-size: 12px; color: #828181; margin-top: 2px;">
+                                            <strong>Clave:</strong> ${premise.clave} | <strong>Tipo:</strong> ${premise.tipo}
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>`;
+                            existingContainer.innerHTML += premiseHTML.replace('TEMP_NAME', 'existing_premises[]');
+                            mixedContainer.innerHTML += premiseHTML.replace('TEMP_NAME', 'mixed_existing_premises[]');
+                        });
+                    } else {
+                        const noPremiseMsg = '<div style="padding: 20px; text-align: center; color: #828181;">No hay premisas disponibles</div>';
+                        existingContainer.innerHTML = noPremiseMsg;
+                        mixedContainer.innerHTML = noPremiseMsg;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al cargar premisas:', error);
+                    const errorMsg = '<div style="padding: 20px; text-align: center; color: #dc3545;">Error al cargar premisas</div>';
+                    existingContainer.innerHTML = errorMsg;
+                    mixedContainer.innerHTML = errorMsg;
+                });
+        }
+    }
+
+     function addNewPremise() {
+        premiseCounter++;
+        const container = document.getElementById('new_premises_container');
+        const newPremise = document.createElement('div');
+        newPremise.className = 'premise-item';
+        newPremise.style.cssText = 'margin-bottom: 15px; padding: 15px; border: 1px solid #e9ecef; border-radius: 8px;';
+        newPremise.innerHTML = `
+            <div class="form-group">
+                <label>Premisa (debe ser True):</label>
+                <input type="text" name="new_premise_text[]" placeholder="Ej: La impresora no responde" required oninput="generateTechnicalKey(this, 'new_premise_key_${premiseCounter}')">
+                <div id="new_premise_key_${premiseCounter}" style="margin-top: 5px; font-size: 12px; color: #828181; font-style: italic;">Clave técnica: (se generará)</div>
+            </div>
+            <div class="form-group">
+                <label>Pregunta para el usuario (Sí/No):</label>
+                <input type="text" name="new_premise_question[]" placeholder="Ej: ¿La impresora responde?" required>
+            </div>
+            <button type="button" onclick="removeItem(this)" style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; float: right;">Eliminar</button>
+        `;
+        container.appendChild(newPremise);
+    }
+
+    function addMixedNewPremise() {
+        mixedPremiseCounter++;
+        const container = document.getElementById('mixed_new_premises_container');
+        const newPremise = document.createElement('div');
+        newPremise.className = 'premise-item';
+        newPremise.style.cssText = 'margin-bottom: 15px; padding: 15px; border: 1px solid #e9ecef; border-radius: 8px;';
+        newPremise.innerHTML = `
+            <div class="form-group">
+                <label>Premisa (debe ser True):</label>
+                <input type="text" name="mixed_new_premise_text[]" placeholder="Ej: La impresora no responde" oninput="generateTechnicalKey(this, 'mixed_premise_key_${mixedPremiseCounter}')">
+                <div id="mixed_premise_key_${mixedPremiseCounter}" style="margin-top: 5px; font-size: 12px; color: #828181; font-style: italic;">Clave técnica: (se generará)</div>
+            </div>
+            <div class="form-group">
+                <label>Pregunta para el usuario (Sí/No):</label>
+                <input type="text" name="mixed_new_premise_question[]" placeholder="Ej: ¿La impresora responde?">
+            </div>
+            <button type="button" onclick="removeItem(this)" style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; float: right;">Eliminar</button>
+        `;
+        container.appendChild(newPremise);
+    }
+
+    function removeItem(button) {
+        button.parentElement.remove();
+    }
+    
+    function addNewAction() {
+        actionCounter++;
+        const container = document.getElementById('new_actions_container');
+        const newItem = document.createElement('div');
+        newItem.className = 'action-item';
+        newItem.style.cssText = 'display: flex; margin-bottom: 10px;';
+        newItem.innerHTML = `
+            <input type="text" name="new_actions[]" placeholder="Descripción de la acción ${actionCounter}" style="flex-grow: 1; margin-right: 10px;">
+            <button type="button" onclick="removeItem(this)" style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">
+                Eliminar
+            </button>
+        `;
+        container.appendChild(newItem);
+    }
+
+    function generateTechnicalKey(input, keyElementId) {
+        const text = input.value;
+        const keyElement = document.getElementById(keyElementId);
+        let technicalKey = "";
+        
+        if (text.trim()) {
+            technicalKey = text
+                .toLowerCase().trim()
+                .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+                .replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '_')
+                .replace(/_+/g, '_').replace(/^_|_$/g, '');
+            keyElement.innerHTML = `<strong>Clave técnica:</strong> ${technicalKey}`;
+            keyElement.style.color = '#0c9aaf';
+        } else {
+            keyElement.innerHTML = 'Clave técnica: (se generará automáticamente)';
+            keyElement.style.color = '#828181';
+        }
+        input.dataset.key = technicalKey;
+    }
+
+    // #### FUNCIÓN MODIFICADA (validateForm) ####
+    function validateForm() {
+        const validationMessage = document.getElementById('validation-message');
+        const errors = [];
+
+        const category = document.getElementById('category').value;
+        const symptomType = document.getElementById('symptom_type').value;
+        const premiseType = document.getElementById('premise_type').value;
+        const probableCause = document.getElementById('probable_cause').value;
+        
+        if (!category) errors.push('Debe seleccionar una categoría');
+        if (!symptomType) errors.push('Debe seleccionar un tipo de síntoma');
+        if (!premiseType) errors.push('Debe seleccionar un tipo de premisas');
+        if (!probableCause.trim()) errors.push('Debe ingresar la causa probable');
+        
+        // Esta es la validación que falla
+        const firstAction = document.querySelector('input[name="new_actions[]"]');
+        if (!firstAction || !firstAction.value.trim()) {
+            errors.push('Debe agregar al menos una acción o sugerencia');
         }
 
-        function generateTechnicalKey(input, keyElementId) {
-            const text = input.value;
-            const keyElement = document.getElementById(keyElementId);
-            let technicalKey = "";
-            
-            if (text.trim()) {
-                technicalKey = text
-                    .toLowerCase()
-                    .trim()
-                    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-                    .replace(/[^a-z0-9\s]/g, '')
-                    .replace(/\s+/g, '_')
-                    .replace(/_+/g, '_') 
-                    .replace(/^_|_$/g, '');
-                
-                keyElement.innerHTML = `<strong>Clave técnica:</strong> ${technicalKey}`;
-                keyElement.style.color = '#0c9aaf';
-            } else {
-                keyElement.innerHTML = 'Clave técnica: (se generará automáticamente)';
-                keyElement.style.color = '#828181';
-            }
-            input.dataset.key = technicalKey;
+        if (symptomType === 'new') {
+            if (!document.getElementById('new_symptom').value.trim()) errors.push('Debe ingresar el nuevo síntoma');
+        } else if (symptomType === 'existing') {
+            if (!document.getElementById('existing_symptom').value) errors.push('Debe seleccionar un síntoma existente');
         }
 
-            function validateForm() {
-            const validationMessage = document.getElementById('validation-message');
-            const errors = [];
-
-            const category = document.getElementById('category').value;
-            const symptomType = document.getElementById('symptom_type').value;
-            const premiseType = document.getElementById('premise_type').value;
-            const probableCause = document.getElementById('probable_cause').value;
-            
-            // (NUEVO) 'userSuggestion' se elimina de la validación
-            
-            if (!category) errors.push('Debe seleccionar una categoría');
-            if (!symptomType) errors.push('Debe seleccionar un tipo de síntoma');
-            if (!premiseType) errors.push('Debe seleccionar un tipo de premisas');
-            if (!probableCause.trim()) errors.push('Debe ingresar la causa probable');
-            
-            // (NUEVO) Validar que al menos la primera acción esté completa
-            const firstAction = document.querySelector('input[name="new_actions[]"]');
-            if (!firstAction || !firstAction.value.trim()) {
-                errors.push('Debe agregar al menos una acción o sugerencia');
+        if (premiseType === 'new') {
+            const premiseTexts = document.querySelectorAll('input[name="new_premise_text[]"]');
+            if (premiseTexts.length === 0 || !premiseTexts[0].value.trim()) {
+                errors.push('Debe agregar al menos una premisa nueva');
             }
-
-            if (symptomType === 'new') {
-                if (!document.getElementById('new_symptom').value.trim()) errors.push('Debe ingresar el nuevo síntoma');
-            } else if (symptomType === 'existing') {
-                if (!document.getElementById('existing_symptom').value) errors.push('Debe seleccionar un síntoma existente');
+        } else if (premiseType === 'existing') {
+            if (document.querySelectorAll('input[name^="existing_premises"]:checked').length === 0) {
+                errors.push('Debe seleccionar al menos una premisa existente');
             }
-
-            if (premiseType === 'new') {
-                const premiseTexts = document.querySelectorAll('input[name="new_premise_text[]"]');
-                if (premiseTexts.length === 0 || !premiseTexts[0].value.trim()) {
-                    errors.push('Debe agregar al menos una premisa nueva');
-                }
-            } else if (premiseType === 'existing') {
-                if (document.querySelectorAll('input[name^="existing_premises"]:checked').length === 0) {
-                    errors.push('Debe seleccionar al menos una premisa existente');
-                }
-            } else if (premiseType === 'mixed') {
-                const mixedExisting = document.querySelectorAll('input[name^="mixed_existing_premises"]:checked');
-                const mixedNewTexts = document.querySelectorAll('input[name="mixed_new_premise_text[]"]');
-                let newTextFound = Array.from(mixedNewTexts).some(input => input.value.trim() !== "");
-                if (mixedExisting.length === 0 && !newTextFound) {
-                    errors.push('Debe seleccionar premisas existentes o agregar nuevas premisas');
-                }
-            }
-
-            if (errors.length > 0) {
-                validationMessage.innerHTML = '<strong>Faltan campos por completar:</strong><br>' + errors.join('<br>');
-                validationMessage.style.display = 'block';
-                validationMessage.style.background = '#f8d7da';
-                validationMessage.style.color = '#721c24';
-                validationMessage.style.border = '1px solid #f5c6cb';
-                return false;
-            } else {
-                validationMessage.style.display = 'none';
-                return true;
+        } else if (premiseType === 'mixed') {
+            const mixedExisting = document.querySelectorAll('input[name^="mixed_existing_premises"]:checked');
+            const mixedNewTexts = document.querySelectorAll('input[name="mixed_new_premise_text[]"]');
+            let newTextFound = Array.from(mixedNewTexts).some(input => input.value.trim() !== "");
+            if (mixedExisting.length === 0 && !newTextFound) {
+                errors.push('Debe seleccionar premisas existentes o agregar nuevas premisas');
             }
         }
 
-        async function handleSubmit(event) {
-            event.preventDefault();
-            
-            if (!validateForm()) return;
-            
-            const validationMessage = document.getElementById('validation-message');
-            const submitBtn = document.getElementById('submitBtn');
-            const form = document.getElementById('knowledgeForm');
-
-            submitBtn.disabled = true;
-            validationMessage.innerHTML = 'Enviando y validando...';
+        if (errors.length > 0) {
+            validationMessage.innerHTML = '<strong>Faltan campos por completar:</strong><br>' + errors.join('<br>');
             validationMessage.style.display = 'block';
-            validationMessage.style.background = '#e2e3e5';
-            validationMessage.style.color = '#383d41';
-            validationMessage.style.border = '1px solid #d6d8db';
+            validationMessage.style.background = '#f8d7da';
+            validationMessage.style.color = '#721c24';
+            validationMessage.style.border = '1px solid #f5c6cb';
+            return false;
+        } else {
+            validationMessage.style.display = 'none';
+            return true;
+        }
+    }
 
-            const formData = new FormData(form);
-            const data = {
-                category: formData.get('category'),
-                symptom_type: formData.get('symptom_type'),
-                new_symptom: formData.get('new_symptom'),
-                existing_symptom: formData.get('existing_symptom'),
-                premise_type: formData.get('premise_type'),
-                probable_cause: formData.get('probable_cause'),
-                new_actions: formData.getAll('new_actions[]'),
-                // 'user_suggestion' se elimina
-                
-                existing_premises: formData.getAll('existing_premises[]').concat(formData.getAll('mixed_existing_premises[]')),
-                
-                new_premise_keys: [],
-                new_premise_texts: formData.getAll('new_premise_text[]').concat(formData.getAll('mixed_new_premise_text[]')),
-                new_premise_questions: formData.getAll('new_premise_question[]').concat(formData.getAll('mixed_new_premise_question[]'))
-            };
+    // #### FUNCIÓN MODIFICADA (handleSubmit) ####
+    async function handleSubmit(event) {
+        event.preventDefault();
+        
+        if (!validateForm()) return;
+        
+        const validationMessage = document.getElementById('validation-message');
+        const submitBtn = document.getElementById('submitBtn');
+        const form = document.getElementById('knowledgeForm');
 
-            data.symptom = (data.symptom_type === 'new') ? data.new_symptom : data.existing_symptom;
+        submitBtn.disabled = true;
+        validationMessage.innerHTML = 'Enviando y validando...';
+        validationMessage.style.display = 'block';
+        validationMessage.style.background = '#e2e3e5';
+        validationMessage.style.color = '#383d41';
+        validationMessage.style.border = '1px solid #d6d8db';
 
-            document.querySelectorAll('input[name="new_premise_text[]"], input[name="mixed_new_premise_text[]"]').forEach(input => {
-                if(input.value.trim() && input.dataset.key) {
-                    data.new_premise_keys.push(input.dataset.key);
-                }
+        const formData = new FormData(form);
+        const data = {
+            category: formData.get('category'),
+            symptom_type: formData.get('symptom_type'),
+            new_symptom: formData.get('new_symptom'),
+            existing_symptom: formData.get('existing_symptom'),
+            premise_type: formData.get('premise_type'),
+            probable_cause: formData.get('probable_cause'),
+            new_actions: formData.getAll('new_actions[]'),
+            // 'user_suggestion' eliminado
+            
+            existing_premises: formData.getAll('existing_premises[]').concat(formData.getAll('mixed_existing_premises[]')),
+            
+            new_premise_keys: [],
+            new_premise_texts: formData.getAll('new_premise_text[]').concat(formData.getAll('mixed_new_premise_text[]')),
+            new_premise_questions: formData.getAll('new_premise_question[]').concat(formData.getAll('mixed_new_premise_question[]'))
+        };
+
+        data.symptom = (data.symptom_type === 'new') ? data.new_symptom : data.existing_symptom;
+
+        document.querySelectorAll('input[name="new_premise_text[]"], input[name="mixed_new_premise_text[]"]').forEach(input => {
+            if(input.value.trim() && input.dataset.key) {
+                data.new_premise_keys.push(input.dataset.key);
+            }
+        });
+
+        console.log("Enviando al backend:", data);
+
+        try {
+            const response = await fetch("{{ url_for('add_knowledge') }}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
             });
 
-            console.log("Enviando al backend:", data);
+            const result = await response.json();
 
-            try {
-                const response = await fetch("{{ url_for('add_knowledge') }}", {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
+            if (response.ok) {
+                validationMessage.innerHTML = `<strong>✅ ${result.message}</strong> Redirigiendo...`;
+                validationMessage.style.background = '#d4edda';
+                validationMessage.style.color = '#155724';
+                validationMessage.style.border = '1px solid #c3e6cb';
+                
+                form.reset(); 
+                
+                // Restablecer el contenedor de acciones al estado inicial (con un campo)
+                document.getElementById('new_actions_container').innerHTML = `
+                    <div class="action-item" style="display: flex; margin-bottom: 10px;">
+                        <input type="text" name="new_actions[]" placeholder="Descripción de la acción/sugerencia 1" style="flex-grow: 1; margin-right: 10px;">
+                    </div>`;
+                actionCounter = 1; // Reiniciar contador
 
-                const result = await response.json();
+                setTimeout(() => {
+                    if (result.redirect) {
+                        window.location.href = result.redirect;
+                    } else {
+                        window.location.href = "{{ url_for('select_category', kb='user') }}";
+                    }
+                }, 2000);
 
-                if (response.ok) {
-                    validationMessage.innerHTML = `<strong>✅ ${result.message}</strong> Redirigiendo...`;
-                    validationMessage.style.background = '#d4edda';
-                    validationMessage.style.color = '#155724';
-                    validationMessage.style.border = '1px solid #c3e6cb';
-                    
-                    form.reset(); 
-                    
-                    // (NUEVO) Restablecer el contenedor de acciones al estado inicial (con un campo)
-                    document.getElementById('new_actions_container').innerHTML = `
-                        <div class="action-item" style="display: flex; margin-bottom: 10px;">
-                            <input type="text" name="new_actions[]" placeholder="Descripción de la acción/sugerencia 1" style="flex-grow: 1; margin-right: 10px;">
-                        </div>`;
-                    actionCounter = 1; // Reiniciar contador
-
-                    setTimeout(() => {
-                        if (result.redirect) {
-                            window.location.href = result.redirect;
-                        } else {
-                            window.location.href = "{{ url_for('select_category', kb='user') }}";
-                        }
-                    }, 2000);
-
-                } else {
-                    validationMessage.innerHTML = `<strong>❌ ${result.message}</strong>`;
-                    validationMessage.style.background = '#f8d7da';
-                    validationMessage.style.color = '#721c24';
-                    validationMessage.style.border = '1px solid #f5c6cb';
-                    submitBtn.disabled = false;
-                }
-
-            } catch (error) {
-                console.error('Error en fetch:', error);
-                validationMessage.innerHTML = '<strong>❌ Error de red.</strong> No se pudo contactar al servidor.';
+            } else {
+                validationMessage.innerHTML = `<strong>❌ ${result.message}</strong>`;
                 validationMessage.style.background = '#f8d7da';
                 validationMessage.style.color = '#721c24';
                 validationMessage.style.border = '1px solid #f5c6cb';
                 submitBtn.disabled = false;
             }
+
+        } catch (error) {
+            console.error('Error en fetch:', error);
+            validationMessage.innerHTML = '<strong>❌ Error de red.</strong> No se pudo contactar al servidor.';
+            validationMessage.style.background = '#f8d7da';
+            validationMessage.style.color = '#721c24';
+            validationMessage.style.border = '1px solid #f5c6cb';
+            submitBtn.disabled = false;
         }
+    }
 
-        document.addEventListener('DOMContentLoaded', function() {
-                const form = document.getElementById('knowledgeForm');
-                if (form) { 
-                    form.addEventListener('input', validateForm);
-                    form.addEventListener('change', validateForm);
-                    
-                    document.getElementById('category').addEventListener('change', function() {
-                        if (document.getElementById('symptom_type').value === 'existing') {
-                            loadExistingSymptoms();
-                        }
-                        if (document.getElementById('premise_type').value === 'existing' || 
-                            document.getElementById('premise_type').value === 'mixed') {
-                            loadExistingPremises();
-                        }
-                        validateForm();
-                    });
-                    
-                    document.getElementById('symptom_type').addEventListener('change', function() {
-                        if (this.value === 'existing') {
-                            loadExistingSymptoms();
-                        }
-                    });
-
-                    document.getElementById('premise_type').addEventListener('change', function() {
-                        if (this.value === 'existing' || this.value === 'mixed') {
-                            loadExistingPremises();
-                        }
-                    });
-                    
-                    form.addEventListener('submit', handleSubmit);
-
-                    // (NUEVO) Validar el formulario una vez al cargar la página
-                    validateForm(); 
+    // #### MODIFICACIÓN (DOMContentLoaded) ####
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('knowledgeForm');
+        if (form) { 
+            form.addEventListener('input', validateForm);
+            form.addEventListener('change', validateForm);
+            
+            document.getElementById('category').addEventListener('change', function() {
+                if (document.getElementById('symptom_type').value === 'existing') {
+                    loadExistingSymptoms();
+                }
+                if (document.getElementById('premise_type').value === 'existing' || 
+                    document.getElementById('premise_type').value === 'mixed') {
+                    loadExistingPremises();
+                }
+                validateForm();
+            });
+            
+            document.getElementById('symptom_type').addEventListener('change', function() {
+                if (this.value === 'existing') {
+                    loadExistingSymptoms();
                 }
             });
-    </script>
+
+            document.getElementById('premise_type').addEventListener('change', function() {
+                if (this.value === 'existing' || this.value === 'mixed') {
+                    loadExistingPremises();
+                }
+            });
+            
+            form.addEventListener('submit', handleSubmit);
+
+            // Validar el formulario una vez al cargar la página
+            validateForm(); 
+        }
+    });
+</script>
 </body>
 </html>

@@ -1,5 +1,10 @@
+
 # PrintExperts
 Este es el repositorio para el trabajo del Equipo 1 del Desarrollo de sistema de IA del 2do cuatrrimestre de 2025 en la tecnicatura de ciencias de datos e IA. <br>
+<p align="center">
+  <img src="static/images/Print_intelligence_logosinletras.png" width="10%">
+</p>
+
 
 #### Integrantes:<br>
 Santiago Oroz<br>
